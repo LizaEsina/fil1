@@ -3,6 +3,7 @@ enum class ForkStatus {
     TAKEN // вилка занята
 }
 
+
 data class Philosopher(
     val id: Int,
     val leftFork: Fork,
