@@ -1,0 +1,69 @@
+enum class ForkStatus {
+    FREE, // вилка свободна
+    TAKEN // вилка занята
+}
+
+data class Philosopher(
+    val id: Int,
+    val leftFork: Fork,
+    val rightFork: Fork
+) : Runnable {
+    override fun run() {
+        while (true) {
+            if (leftFork.take(id) && rightFork.take(id)) {
+                println("Филосов $id ест")
+                Thread.sleep(1000)
+                leftFork.put(id)
+                rightFork.put(id)
+                break
+            } else {
+                leftFork.put(id)
+                rightFork.put(id)
+                println("Филосов  $id думает")
+                Thread.sleep(1000)
+            }
+        }
+    }
+}
+
+class Fork {
+    private var status = ForkStatus.FREE
+    private var takenBy: Int? = null
+
+    @Synchronized
+    fun take(id: Int): Boolean {
+        if (status == ForkStatus.FREE) {
+            status = ForkStatus.TAKEN
+            takenBy = id
+            return true
+        }
+        return false
+    }
+
+    @Synchronized
+    fun put(id: Int) {
+        if (status == ForkStatus.TAKEN && takenBy == id) {
+            status = ForkStatus.FREE
+            takenBy = null
+        }
+    }
+}
+
+fun main() {
+    val philosophersCount = readlnOrNull()?.toIntOrNull()
+    if (philosophersCount == null || philosophersCount <= 0) {
+        println("Не правильный ввод")
+        return
+    }
+
+    val forks = List(philosophersCount) { Fork() }
+    val philosophers = List(philosophersCount) { id ->
+        val leftFork = forks[id]
+        val rightFork = forks[(id + 1) % philosophersCount]
+        Philosopher(id, leftFork, rightFork)
+    }
+
+    philosophers.shuffled().forEach { philosopher ->
+        Thread(philosopher).start()
+    }
+}
